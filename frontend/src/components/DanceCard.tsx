@@ -14,9 +14,10 @@ const DanceCard = ({ dance, index = 0 }: DanceCardProps) => {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
+      className="h-full"
     >
-      <div className="dance-card">
-        <div className="aspect-[4/3] overflow-hidden rounded-lg bg-muted">
+      <div className="dance-card h-full">
+        <div className="dance-card-media aspect-[16/10] overflow-hidden rounded-lg">
           <img
             src={dance.imageUrl}
             alt={dance.name}
@@ -24,17 +25,17 @@ const DanceCard = ({ dance, index = 0 }: DanceCardProps) => {
           />
         </div>
 
-        <div className="mt-4">
-          <h3 className="font-display text-xl font-semibold text-primary-text">
+        <div className="mt-3">
+          <h3 className="font-display text-lg font-semibold text-black">
             {dance.name}
           </h3>
-          <p className="mt-1 text-xs text-saffron font-medium">{dance.origin}</p>
-          <p className="mt-2 text-sm text-secondary-text line-clamp-2">
+          <p className="mt-1 text-xs font-medium text-[#D4A63A]">{dance.origin}</p>
+          <p className="mt-2 text-[0.95rem] text-black line-clamp-2">
             {dance.shortDescription}
           </p>
           <Link
             to={`/dances/${dance.id}`}
-            className="mt-4 inline-flex text-sm font-medium text-saffron transition-colors hover:text-antique-gold"
+            className="mt-3 inline-flex text-sm font-medium text-[#D4A63A] transition-colors hover:text-[#E3BF66]"
           >
             Explore →
           </Link>
