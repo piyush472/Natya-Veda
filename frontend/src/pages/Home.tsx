@@ -1,7 +1,5 @@
 import Hero from "@/components/Hero";
-import DanceCard from "@/components/DanceCard";
 import FeatureCard from "@/components/FeatureCard";
-import { dances } from "@/data/dances";
 import { Network, History, Hand, PlayCircle } from "lucide-react";
 
 const features = [
@@ -32,28 +30,8 @@ const Home = () => {
     <div>
       <Hero />
 
-      {/* Dance Forms Section */}
-      <section className="bg-main-bg">
-        <div className="container mx-auto px-6">
-          <div className="mb-16 text-center">
-            <h2 className="text-primary-text">
-              Explore Dance Forms
-            </h2>
-            <p className="mt-3 text-secondary-text text-lg">
-              Discover the rich traditions of Indian classical dance
-            </p>
-          </div>
-
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {dances.map((dance, i) => (
-              <DanceCard key={dance.id} dance={dance} index={i} />
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Features Section */}
-      <section className="bg-section-bg">
+      <section className="content-section content-section-blend bg-section-bg">
         <div className="container mx-auto px-6">
           <div className="mb-16 text-center">
             <h2 className="text-primary-text">
