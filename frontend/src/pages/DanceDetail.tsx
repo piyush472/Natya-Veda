@@ -1,8 +1,33 @@
 import { useParams, Link } from "react-router-dom";
-import { dances } from "@/data/dances";
 import { ArrowLeft, Network } from "lucide-react";
 import { motion } from "framer-motion";
 import natarajaVisual from "@/assets/download (1).jpg";
+import { useEffect, useState } from "react";
+import { getDanceDetail } from "@/lib/api";
+import bharatanatyamImg from "@/assets/bharatanatyam.jpg";
+import kathakImg from "@/assets/kathak.jpg";
+import odissiImg from "@/assets/odissi.jpg";
+import kathakaliImg from "@/assets/kathakali.jpg";
+
+interface Dance {
+  id: string;
+  name: string;
+  origin: string;
+  shortDescription: string;
+  description?: string;
+  history?: string;
+  templeTraitions?: string;
+  philosophy?: string;
+  famousMudras: string[];
+}
+
+// Map dance IDs to image assets
+const danceImages: Record<string, string> = {
+  bharatanatyam: bharatanatyamImg,
+  kathak: kathakImg,
+  odissi: odissiImg,
+  kathakali: kathakaliImg,
+};
 
 const detailStars = [
   { left: "8%", top: "10%", delay: "0.3s", duration: "2.1s" },
@@ -22,9 +47,44 @@ const detailStars = [
 
 const DanceDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const dance = dances.find((d) => d.id === id);
+  const [dance, setDance] = useState<Dance | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!dance) {
+  useEffect(() => {
+    const fetchDance = async () => {
+      try {
+        if (!id) {
+          setError("Dance ID not found");
+          setLoading(false);
+          return;
+        }
+        setLoading(true);
+        const data = await getDanceDetail(id);
+        if (!data) {
+          setError("Dance not found");
+        } else {
+          setDance(data);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch dance");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDance();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center pt-20">
+        <p className="text-[#d9ccac]">Loading...</p>
+      </div>
+    );
+  }
+
+  if (error || !dance) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-20">
         <div className="text-center">
@@ -42,6 +102,8 @@ const DanceDetail = () => {
     { title: "Temple Traditions", content: dance.templeTraitions },
     { title: "Philosophy", content: dance.philosophy },
   ];
+
+  const imageUrl = danceImages[dance.id] || bharatanatyamImg;
 
   return (
     <div className="dances-page min-h-screen pt-24 pb-16">
@@ -88,7 +150,7 @@ const DanceDetail = () => {
           {/* Hero */}
           <div className="mb-12 grid gap-8 lg:grid-cols-2">
             <div className="dance-card-media aspect-[4/3] overflow-hidden rounded-xl">
-              <img src={dance.imageUrl} alt={dance.name} className="h-full w-full object-cover" />
+              <img src={imageUrl} alt={dance.name} className="h-full w-full object-cover" />
             </div>
             <div className="flex flex-col justify-center">
               <p className="text-sm font-medium text-[#f0c96d]">{dance.origin}</p>

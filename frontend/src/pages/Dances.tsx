@@ -1,6 +1,19 @@
 import DanceCard from "@/components/DanceCard";
-import { dances } from "@/data/dances";
 import natarajaVisual from "@/assets/download (1).jpg";
+import { useEffect, useState } from "react";
+import { getDances } from "@/lib/api";
+
+interface Dance {
+  id: string;
+  name: string;
+  origin: string;
+  shortDescription: string;
+  description?: string;
+  history?: string;
+  templeTraitions?: string;
+  philosophy?: string;
+  famousMudras: string[];
+}
 
 const stars = [
   { left: "6%", top: "12%", delay: "0.2s", duration: "2.3s" },
@@ -21,6 +34,29 @@ const stars = [
 ];
 
 const Dances = () => {
+  const [dances, setDances] = useState<Dance[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchDances = async () => {
+      try {
+        setLoading(true);
+        const data = await getDances();
+        console.log("Fetched dances:", data);
+        setDances(data);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to fetch dances";
+        console.error("Error fetching dances:", errorMsg);
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDances();
+  }, []);
+
   return (
     <div className="dances-page min-h-screen pt-24 pb-16">
       <img
@@ -59,11 +95,16 @@ const Dances = () => {
           </p>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {dances.map((dance, i) => (
-            <DanceCard key={dance.id} dance={dance} index={i} />
-          ))}
-        </div>
+        {loading && <p className="text-[#d9ccac]">Loading dances...</p>}
+        {error && <p className="text-red-500">Error: {error}</p>}
+        
+        {!loading && !error && (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {dances.map((dance, i) => (
+              <DanceCard key={dance.id} dance={dance} index={i} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
