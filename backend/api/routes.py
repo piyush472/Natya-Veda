@@ -2,19 +2,81 @@ from flask import Blueprint, request, jsonify
 import cv2
 import numpy as np
 import base64
+from pathlib import Path
 from io import BytesIO
+from collections import deque, Counter
+import joblib
+import mediapipe as mp
 from PIL import Image
 
 api_bp = Blueprint('api', __name__)
 
-# Initialize mudra detector
+MODEL_PATH = Path(__file__).resolve().parent.parent / 'ml_pipeline' / 'artifacts' / 'model.pkl'
+SMOOTH_WINDOW = 5
+prediction_history = deque(maxlen=SMOOTH_WINDOW)
+
+model_payload = None
+model = None
+label_encoder = None
+feature_dim = 42
+hands_detector = None
+
 try:
-    from mudra_detection import get_detector, init_detector
-    init_detector()
-    detector = get_detector()
+    model_payload = joblib.load(MODEL_PATH)
+    model = model_payload['model']
+    label_encoder = model_payload['label_encoder']
+    feature_dim = int(model_payload.get('feature_dim', 42))
+
+    mp_hands = mp.solutions.hands
+    hands_detector = mp_hands.Hands(
+        static_image_mode=False,
+        model_complexity=0,
+        max_num_hands=1,
+        min_detection_confidence=0.6,
+        min_tracking_confidence=0.6,
+    )
+    print(f"✅ ML mudra model loaded from: {MODEL_PATH}")
 except Exception as e:
-    print(f"Warning: Mudra detector initialization failed - {e}")
-    detector = None
+    print(f"⚠️ ML mudra model initialization failed: {e}")
+
+
+def normalize_landmarks(landmarks_xy):
+    """Normalize 21x2 landmarks with wrist-relative scale normalization."""
+    wrist = landmarks_xy[0]
+    centered = landmarks_xy - wrist
+    scale = np.max(np.linalg.norm(centered, axis=1))
+    if scale < 1e-6:
+        return centered
+    return centered / scale
+
+
+def extract_feature_vector(frame_bgr):
+    """Extract flattened 42-d landmark vector from first detected hand."""
+    if hands_detector is None:
+        return None
+
+    frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+    results = hands_detector.process(frame_rgb)
+
+    if not results.multi_hand_landmarks:
+        return None
+
+    hand_landmarks = results.multi_hand_landmarks[0]
+    landmarks_xy = np.array([(lm.x, lm.y) for lm in hand_landmarks.landmark], dtype=np.float32)
+    landmarks_xy = normalize_landmarks(landmarks_xy)
+    return landmarks_xy.flatten()
+
+
+def smooth_prediction(label):
+    """Return stable label only when majority in recent frames agrees."""
+    prediction_history.append(label)
+    if len(prediction_history) < prediction_history.maxlen:
+        return None
+
+    winner, votes = Counter(prediction_history).most_common(1)[0]
+    if votes >= (prediction_history.maxlen // 2 + 1):
+        return winner
+    return None
 
 # Complete dance data (moved from frontend)
 DANCES = {
@@ -164,61 +226,105 @@ def get_mudra_info(mudra_name):
         return jsonify({'error': 'Mudra not found'}), 404
     return jsonify(mudra), 200
 
+# ========== MUDRA FINGER PATTERN DETECTION ==========
+ML_MUDRAS = {
+    'Pataka': {'image_file': 'pataka.jpg'},
+    'Tripathaka': {'image_file': 'tripataka.jpg'},
+    'Ardhapataka': {'image_file': 'ardhpataka.jpg'},
+    'Mushti': {'image_file': 'mushti.jpg'},
+    'Shikharam': {'image_file': 'Shikharam.jpg'},
+    'Chandrakala': {'image_file': 'Chandrakala.jpg'},
+    'Padmakosha': {'image_file': 'Padmakosha.jpg'},
+    'Sarpashirsha': {'image_file': 'Sarpashirsha.jpg'},
+    'Mrigashirsha': {'image_file': 'Mrigashirsha.jpg'},
+    'Simhamukha': {'image_file': 'Simhamukha.jpg'},
+    'Mayura': {'image_file': 'Mayura.jpg'},
+    'Alapadma': {'image_file': 'Alapadma.jpg'},
+}
+
+
 @api_bp.route('/detect-mudra', methods=['POST'])
 def detect_mudra_endpoint():
-    """Detect mudra from base64 encoded image"""
-    if detector is None:
-        return jsonify({'error': 'Mudra detector not initialized'}), 503
-    
+    """Detect mudra with trained ML model using MediaPipe landmark features."""
+    if model is None or label_encoder is None or hands_detector is None:
+        return jsonify({'error': 'ML mudra model not initialized', 'status': 'error'}), 503
+
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         image_data = data.get('image')
         
         if not image_data:
             return jsonify({'error': 'No image provided'}), 400
         
-        # Decode base64 image
-        image_bytes = base64.b64decode(image_data.split(',')[1])
-        image = Image.open(BytesIO(image_bytes))
+        # Decode image
+        try:
+            image_bytes = base64.b64decode(image_data.split(',')[1])
+        except:
+            image_bytes = base64.b64decode(image_data)
+        
+        image = Image.open(BytesIO(image_bytes)).convert('RGB')
         frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-        
-        # Process frame
-        processed_frame, detected_mudra, confidence = detector.process_frame(frame)
-        
-        # Get mudra info if detected
-        mudra_info = None
-        if detected_mudra:
-            mudra_data = detector.get_mudra_info(detected_mudra)
-            if mudra_data:
-                mudra_info = {
-                    'name': detected_mudra,
+
+        feature = extract_feature_vector(frame)
+        if feature is None or feature.shape[0] != feature_dim:
+            prediction_history.clear()
+            return jsonify({
+                'detected_mudra': None,
+                'confidence': 0.0,
+                'mudra_info': None,
+                'finger_state': None,
+                'status': 'no_hand',
+                'source': 'mediapipe',
+                'message': 'No hand detected. Show your full hand to the camera.'
+            }), 200
+
+        probs = model.predict_proba([feature])[0]
+        pred_idx = int(np.argmax(probs))
+        raw_label = label_encoder.inverse_transform([pred_idx])[0]
+        confidence = float(probs[pred_idx])
+        stable_label = smooth_prediction(raw_label)
+
+        if stable_label and confidence >= 0.65:
+            mudra_meta = ML_MUDRAS.get(stable_label, {'image_file': ''})
+            return jsonify({
+                'detected_mudra': stable_label,
+                'confidence': confidence,
+                'mudra_info': {
+                    'name': stable_label,
                     'confidence': confidence,
-                    'image_path': mudra_data['image_path']
-                }
-        
+                    'image_file': mudra_meta.get('image_file', ''),
+                    'description': 'ML classification from MediaPipe hand landmarks'
+                },
+                'finger_state': None,
+                'source': 'mediapipe',
+                'status': 'detected',
+                'message': f'{stable_label} detected',
+                'all_scores': {str(label_encoder.inverse_transform([i])[0]): float(prob) for i, prob in enumerate(probs)}
+            }), 200
+
         return jsonify({
-            'detected_mudra': detected_mudra,
+            'detected_mudra': None,
             'confidence': confidence,
-            'mudra_info': mudra_info
+            'mudra_info': None,
+            'finger_state': None,
+            'best_match': raw_label,
+            'source': 'mediapipe',
+            'status': 'hand_present_no_match',
+            'message': f'Hand visible (trying {raw_label})',
+            'all_scores': {str(label_encoder.inverse_transform([i])[0]): float(prob) for i, prob in enumerate(probs)}
         }), 200
     
     except Exception as e:
-        print(f"Mudra detection error: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'status': 'error'}), 500
 
 @api_bp.route('/mudra-database', methods=['GET'])
 def get_mudra_database():
-    """Get list of available mudras"""
-    if detector is None:
-        return jsonify({'error': 'Mudra detector not initialized'}), 503
-    
-    mudra_list = []
-    for mudra_name in detector.mudra_database.keys():
-        mudra_list.append({
-            'name': mudra_name,
-            'image_path': detector.mudra_database[mudra_name]['image_path']
-        })
-    
+    """Get list of ML mudra classes."""
+    mudra_list = [{'name': name, 'image_file': info.get('image_file', '')} for name, info in ML_MUDRAS.items()]
+
     return jsonify({'mudras': mudra_list}), 200
 
 # ========== HEALTH CHECK ==========
@@ -227,3 +333,112 @@ def get_mudra_database():
 def test():
     """Test endpoint"""
     return jsonify({'message': 'API is working!'}), 200
+
+# ========== TRAINING ENDPOINT ==========
+
+@api_bp.route('/train-model', methods=['POST'])
+def train_model():
+    """Train 12-mudra model from dataset."""
+    try:
+        import sys
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import LabelEncoder
+        from sklearn.metrics import accuracy_score
+        
+        dataset_dir = Path(__file__).resolve().parent.parent / 'ml_pipeline' / 'dataset' / '12-Mudras'
+        artifacts_dir = Path(__file__).resolve().parent.parent / 'ml_pipeline' / 'artifacts'
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Preprocess dataset
+        print("Preprocessing 12 mudras...")
+        X, y, processed, skipped = [], [], 0, 0
+        
+        class_dirs = sorted([d for d in dataset_dir.iterdir() if d.is_dir()])
+        
+        with hands_detector.Hands(
+            static_image_mode=True,
+            model_complexity=0,
+            max_num_hands=1,
+            min_detection_confidence=0.6,
+        ) as hands:
+            for class_dir in class_dirs:
+                label = class_dir.name
+                
+                image_paths = sorted([
+                    p for p in class_dir.rglob("*")
+                    if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+                ])
+                
+                for image_path in image_paths:
+                    processed += 1
+                    image = cv2.imread(str(image_path))
+                    if image is None:
+                        skipped += 1
+                        continue
+                    
+                    feature = extract_feature_vector(image)
+                    if feature is None or feature.shape[0] != feature_dim:
+                        skipped += 1
+                        continue
+                    
+                    X.append(feature)
+                    y.append(label)
+        
+        X = np.array(X, dtype=np.float32)
+        y = np.array(y)
+        
+        print(f"Processed: {processed}, Skipped: {skipped}, Dataset shape: {X.shape}")
+        
+        # Train RandomForest
+        print("Training RandomForest...")
+        label_encoder = LabelEncoder()
+        y_encoded = label_encoder.fit_transform(y)
+        
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+        )
+        
+        model = RandomForestClassifier(
+            n_estimators=300,
+            max_depth=None,
+            min_samples_split=2,
+            min_samples_leaf=1,
+            class_weight="balanced",
+            random_state=42,
+            n_jobs=-1,
+        )
+        model.fit(X_train, y_train)
+        
+        y_pred = model.predict(X_test)
+        accuracy = accuracy_score(y_test, y_pred)
+        
+        # Save and update global model
+        global model_payload
+        payload = {
+            "model": model,
+            "label_encoder": label_encoder,
+            "class_names": label_encoder.classes_.tolist(),
+            "feature_dim": int(X.shape[1]),
+            "accuracy": float(accuracy),
+        }
+        
+        model_path = artifacts_dir / 'model.pkl'
+        joblib.dump(payload, model_path)
+        
+        # Reload into memory
+        model_payload = payload
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'12-mudra model trained successfully',
+            'accuracy': float(accuracy),
+            'classes': label_encoder.classes_.tolist(),
+            'model_path': str(model_path),
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Training error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'status': 'error', 'message': str(e)}), 500

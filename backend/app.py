@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Enable CORS (allow frontend requests)
 CORS(app, 
-     resources={r"/api/*": {"origins": ["http://localhost:8080", "http://localhost:8081", "http://localhost:5173", "http://127.0.0.1:8080", "http://127.0.0.1:8081", "http://127.0.0.1:5173"]}},
+     resources={r"/api/*": {"origins": ["http://localhost:8080", "http://localhost:8081", "http://localhost:8082", "http://localhost:5173", "http://127.0.0.1:8080", "http://127.0.0.1:8081", "http://127.0.0.1:8082", "http://127.0.0.1:5173"]}},
      supports_credentials=True)
 
 # Import routes

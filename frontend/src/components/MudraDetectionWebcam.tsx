@@ -2,21 +2,59 @@ import React, { useRef, useEffect, useState } from "react";
 import { Camera, X, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Import all 12 mudra images
+import pataka from "../assets/pataka.jpg";
+import tripataka from "../assets/tripataka.jpg";
+import ardhpataka from "../assets/ardhpataka.jpg";
+import mushti from "../assets/mushti.jpg";
+import shikharam from "../assets/Shikharam.jpg";
+import chandrakala from "../assets/Chandrakala.jpg";
+import padmakosha from "../assets/Padmakosha.jpg";
+import sarpashirsha from "../assets/Sarpashirsha.jpg";
+import mrigashirsha from "../assets/Mrigashirsha.jpg";
+import simhamukha from "../assets/Simhamukha.jpg";
+import mayura from "../assets/Mayura.jpg";
+import alapadma from "../assets/Alapadma.jpg";
+
 interface DetectedMudra {
   name: string;
   confidence: number;
-  image_path: string;
+  image_file?: string;
+  image_path?: string;
+  num_landmarks?: number;
 }
+
+// Helper function to get image URL based on mudra name
+const getMudraImageUrl = (mudraName: string | undefined): string => {
+  if (!mudraName) return "";
+  const mudraMap: Record<string, string> = {
+    Pataka: pataka,
+    Tripathaka: tripataka,
+    Ardhapataka: ardhpataka,
+    Mushti: mushti,
+    Shikharam: shikharam,
+    Chandrakala: chandrakala,
+    Padmakosha: padmakosha,
+    Sarpashirsha: sarpashirsha,
+    Mrigashirsha: mrigashirsha,
+    Simhamukha: simhamukha,
+    Mayura: mayura,
+    Alapadma: alapadma,
+  };
+  return mudraMap[mudraName] || "";
+};
 
 export const MudraDetectionWebcam: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDetectingRef = useRef(false);
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [detectedMudra, setDetectedMudra] = useState<DetectedMudra | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [confidence, setConfidence] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const detectInterval = useRef<NodeJS.Timeout | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string>("Start webcam to begin detection");
+  const [allScores, setAllScores] = useState<Record<string, number> | null>(null);
+  const detectInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Start webcam
   const startWebcam = async () => {
@@ -29,6 +67,7 @@ export const MudraDetectionWebcam: React.FC = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsWebcamActive(true);
+        setStatusMessage("Detecting mudras in real-time...");
       }
     } catch (err) {
       setError("Could not access webcam. Please check permissions.");
@@ -43,6 +82,7 @@ export const MudraDetectionWebcam: React.FC = () => {
       tracks.forEach((track) => track.stop());
     }
     setIsWebcamActive(false);
+    setStatusMessage("Start webcam to begin detection");
     if (detectInterval.current) {
       clearInterval(detectInterval.current);
     }
@@ -51,6 +91,7 @@ export const MudraDetectionWebcam: React.FC = () => {
   // Capture frame and send to backend
   const captureAndDetect = async () => {
     if (!videoRef.current || !canvasRef.current) return;
+    if (isDetectingRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -60,6 +101,10 @@ export const MudraDetectionWebcam: React.FC = () => {
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
 
+    // Flip canvas horizontally to match video display
+    ctx.scale(-1, 1);
+    ctx.translate(-canvas.width, 0);
+    
     // Draw video frame to canvas
     ctx.drawImage(videoRef.current, 0, 0);
 
@@ -67,7 +112,7 @@ export const MudraDetectionWebcam: React.FC = () => {
     const imageData = canvas.toDataURL("image/jpeg", 0.8);
 
     try {
-      setIsLoading(true);
+      isDetectingRef.current = true;
 
       const response = await fetch("http://localhost:5000/api/detect-mudra", {
         method: "POST",
@@ -82,19 +127,38 @@ export const MudraDetectionWebcam: React.FC = () => {
       }
 
       const result = await response.json();
+      
+      console.log("Detection result:", result);
 
       if (result.detected_mudra && result.mudra_info) {
-        setDetectedMudra(result.mudra_info);
-        setConfidence(result.confidence);
+        setDetectedMudra({
+          name: result.mudra_info.name,
+          confidence: result.mudra_info.confidence,
+          image_file: result.mudra_info.image_file,
+          num_landmarks: result.mudra_info.num_landmarks,
+        });
+        setConfidence(result.mudra_info.confidence);
+        setStatusMessage(`✅ ${result.mudra_info.name} detected!`);
       } else {
         setDetectedMudra(null);
         setConfidence(0);
+        // Show best match attempt
+        if (result.best_match) {
+          setStatusMessage(`Hand visible (trying ${result.best_match})`);
+        } else {
+          setStatusMessage("Show your hand to the camera");
+        }
+      }
+      
+      // Store all scores for debugging
+      if (result.all_scores) {
+        setAllScores(result.all_scores);
       }
     } catch (err) {
       console.error("Detection error:", err);
       setError("Failed to detect mudra. Check backend connection.");
     } finally {
-      setIsLoading(false);
+      isDetectingRef.current = false;
     }
   };
 
@@ -172,7 +236,7 @@ export const MudraDetectionWebcam: React.FC = () => {
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover scale-x-[-1]"
               />
               <canvas
                 ref={canvasRef}
@@ -190,14 +254,6 @@ export const MudraDetectionWebcam: React.FC = () => {
                 </div>
               )}
 
-              {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-                  <div className="text-center">
-                    <div className="mb-2 h-8 w-8 animate-spin rounded-full border-2 border-[#f0c96d] border-t-transparent mx-auto"></div>
-                    <p className="text-xs text-gray-300">Detecting...</p>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Control buttons */}
@@ -224,7 +280,7 @@ export const MudraDetectionWebcam: React.FC = () => {
             {/* Detection status */}
             <div className="mt-4 rounded-lg bg-card/50 p-3 text-center text-sm text-muted-foreground">
               {isWebcamActive ? (
-                <p>🟢 Detecting mudras in real-time...</p>
+                <p>🟢 {statusMessage}</p>
               ) : (
                 <p>🔴 Webcam not active</p>
               )}
@@ -288,13 +344,13 @@ export const MudraDetectionWebcam: React.FC = () => {
                   </div>
 
                   {/* Reference image */}
-                  {detectedMudra.image_path && (
+                  {detectedMudra && getMudraImageUrl(detectedMudra.name) && (
                     <div className="rounded-lg border border-gold-subtle/30 overflow-hidden bg-card/50 p-3">
                       <p className="text-xs font-medium text-muted-foreground mb-2">
                         Reference Image
                       </p>
                       <img
-                        src={detectedMudra.image_path}
+                        src={getMudraImageUrl(detectedMudra.name)}
                         alt={detectedMudra.name}
                         className="w-full h-auto max-h-64 object-cover rounded"
                         onError={(e) => {
@@ -307,7 +363,7 @@ export const MudraDetectionWebcam: React.FC = () => {
 
                   {/* Info */}
                   <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-3 text-xs text-blue-300">
-                    Keep the mudra pose steady for better accuracy
+                    ✓ Hand detected! Keep the pose steady for better accuracy
                   </div>
                 </motion.div>
               ) : (
@@ -320,12 +376,19 @@ export const MudraDetectionWebcam: React.FC = () => {
                 >
                   <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-gold-subtle/30 bg-card/30">
                     <div className="text-center">
-                      <div className="mb-3 text-4xl">🔍</div>
-                      <p className="text-muted-foreground">
+                      <div className="mb-3 text-4xl">
+                        {isWebcamActive ? "👆" : "📹"}
+                      </div>
+                      <p className="text-muted-foreground font-medium">
                         {isWebcamActive
-                          ? "No mudra detected yet..."
+                          ? "Show your hand to the camera"
                           : "Start the webcam to begin detection"}
                       </p>
+                      {isWebcamActive && (
+                        <p className="text-xs text-muted-foreground/70 mt-2">
+                          Make sure your full hand is visible in the frame
+                        </p>
+                      )}
                     </div>
                   </div>
 
@@ -336,20 +399,28 @@ export const MudraDetectionWebcam: React.FC = () => {
                     </p>
                     <ul className="space-y-2 text-xs text-muted-foreground">
                       <li className="flex gap-2">
-                        <span>✓</span>
-                        <span>Ensure good lighting on your hand</span>
+                        <span>💡</span>
+                        <span>Bright lighting helps - position light from above/side</span>
                       </li>
                       <li className="flex gap-2">
-                        <span>✓</span>
-                        <span>Keep your hand clearly visible in frame</span>
+                        <span>👋</span>
+                        <span>Show your entire hand palm-forward or from the side</span>
                       </li>
                       <li className="flex gap-2">
-                        <span>✓</span>
-                        <span>Hold the pose steady for a few seconds</span>
+                        <span>⏱️</span>
+                        <span>Hold the mudra pose steady for 2-3 seconds</span>
                       </li>
                       <li className="flex gap-2">
-                        <span>✓</span>
-                        <span>Position hand about 30-60cm from camera</span>
+                        <span>📏</span>
+                        <span>Position hand 25-50cm from camera for best results</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span>🎯</span>
+                        <span>Avoid shadows and keep background clear</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span>✋</span>
+                        <span>Make sure fingers are clearly separated and visible</span>
                       </li>
                     </ul>
                   </div>
@@ -370,7 +441,7 @@ export const MudraDetectionWebcam: React.FC = () => {
             Supported Mudras
           </h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {["Pataka", "Tripataka", "Arala", "Trishula"].map((mudra) => (
+            {["Pataka", "Tripataka", "Ardhapataka", "Mushti"].map((mudra) => (
               <div
                 key={mudra}
                 className="rounded-lg border border-gold-subtle/30 bg-card/50 p-3 text-center"
