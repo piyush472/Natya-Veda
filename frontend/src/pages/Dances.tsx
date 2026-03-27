@@ -10,9 +10,17 @@ interface Dance {
   shortDescription: string;
   description?: string;
   history?: string;
+  completeHistory?: {
+    ancientOrigins: string;
+    templeHeritage: string;
+    devadasiTradition: string;
+    modernRevival: string;
+    contemporaryEra: string;
+  };
   templeTraitions?: string;
   philosophy?: string;
   famousMudras: string[];
+  historySoundUrl?: string;
 }
 
 const stars = [
