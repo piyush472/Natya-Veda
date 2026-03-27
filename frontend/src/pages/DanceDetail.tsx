@@ -1,13 +1,21 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Network } from "lucide-react";
+import { ArrowLeft, Network, Play, Pause, Volume2 } from "lucide-react";
 import { motion } from "framer-motion";
 import natarajaVisual from "@/assets/download (1).jpg";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { getDanceDetail } from "@/lib/api";
 import bharatanatyamImg from "@/assets/bharatanatyam.jpg";
 import kathakImg from "@/assets/kathak.jpg";
 import odissiImg from "@/assets/odissi.jpg";
 import kathakaliImg from "@/assets/kathakali.jpg";
+
+interface CompleteHistory {
+  ancientOrigins: string;
+  templeHeritage: string;
+  devadasiTradition: string;
+  modernRevival: string;
+  contemporaryEra: string;
+}
 
 interface Dance {
   id: string;
@@ -16,9 +24,11 @@ interface Dance {
   shortDescription: string;
   description?: string;
   history?: string;
+  completeHistory?: CompleteHistory;
   templeTraitions?: string;
   philosophy?: string;
   famousMudras: string[];
+  historySoundUrl?: string;
 }
 
 // Map dance IDs to image assets
@@ -50,6 +60,8 @@ const DanceDetail = () => {
   const [dance, setDance] = useState<Dance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
     const fetchDance = async () => {
@@ -76,6 +88,17 @@ const DanceDetail = () => {
     fetchDance();
   }, [id]);
 
+  const handleAudioToggle = () => {
+    if (audioRef.current) {
+      if (isAudioPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play();
+      }
+      setIsAudioPlaying(!isAudioPlaying);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center pt-20">
@@ -96,12 +119,6 @@ const DanceDetail = () => {
       </div>
     );
   }
-
-  const sections = [
-    { title: "History", content: dance.history },
-    { title: "Temple Traditions", content: dance.templeTraitions },
-    { title: "Philosophy", content: dance.philosophy },
-  ];
 
   const imageUrl = danceImages[dance.id] || bharatanatyamImg;
 
@@ -161,15 +178,115 @@ const DanceDetail = () => {
             </div>
           </div>
 
-          {/* Info Sections */}
-          <div className="grid gap-6 lg:grid-cols-3">
-            {sections.map((section) => (
-              <div key={section.title} className="rounded-xl border border-gold-subtle bg-card p-6">
-                <h2 className="font-display text-xl font-semibold text-foreground">{section.title}</h2>
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{section.content}</p>
+          {/* Comprehensive History Section */}
+          {dance.completeHistory && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.1 }}
+              className="mb-12 rounded-xl border border-gold-subtle bg-card p-8"
+            >
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="font-display text-3xl font-bold text-foreground">Complete History</h2>
+                {/* Audio Player for History */}
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={handleAudioToggle}
+                    className="flex items-center gap-2 rounded-lg bg-primary/20 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/30"
+                  >
+                    <Volume2 size={18} />
+                    {isAudioPlaying ? (
+                      <>
+                        <Pause size={16} />
+                        <span>Pause</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={16} />
+                        <span>Listen to History</span>
+                      </>
+                    )}
+                  </button>
+                  <audio
+                    ref={audioRef}
+                    onEnded={() => setIsAudioPlaying(false)}
+                    className="hidden"
+                  >
+                    <source src={dance.historySoundUrl} type="audio/mpeg" />
+                    Your browser does not support the audio element.
+                  </audio>
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* Vertical Stack Layout */}
+              <div className="flex flex-col gap-6">
+                  {/* Ancient Origins */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
+                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Ancient Origins</h3>
+                      <p className="text-xs text-[#f0c96d] font-medium mb-3">2,000 BCE - Present</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.ancientOrigins}</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Temple Heritage */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
+                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Temple Heritage</h3>
+                      <p className="text-xs text-[#f0c96d] font-medium mb-3">Sacred Temples</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.templeHeritage}</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Devadasi Tradition */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
+                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Devadasi Tradition</h3>
+                      <p className="text-xs text-[#f0c96d] font-medium mb-3">1,500 Year Lineage</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.devadasiTradition}</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Modern Revival */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
+                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Modern Revival</h3>
+                      <p className="text-xs text-[#f0c96d] font-medium mb-3">1930s - 1940s</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.modernRevival}</p>
+                    </div>
+                  </motion.div>
+
+                  {/* Contemporary Era */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
+                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Contemporary Era</h3>
+                      <p className="text-xs text-[#f0c96d] font-medium mb-3">Present Day</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.contemporaryEra}</p>
+                    </div>
+                  </motion.div>
+                </div>
+            </motion.div>
+          )}
 
           {/* Famous Mudras */}
           <div className="mt-8 rounded-xl border border-gold-subtle bg-card p-6">
