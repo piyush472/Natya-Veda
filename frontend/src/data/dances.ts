@@ -22,6 +22,10 @@ export interface Dance {
   famousMudras: string[];
   imageUrl: string;
   historySoundUrl?: string;
+  audioNarration?: {
+    english?: string;
+    hindi?: string;
+  };
 }
 
 export const dances: Dance[] = [
@@ -43,6 +47,10 @@ export const dances: Dance[] = [
     philosophy: "Bharatanatyam embodies the concept of Natya Yoga — the path to spiritual liberation through dance. It expresses the Nava Rasas (nine emotions) and connects the dancer to the divine through movement, rhythm, and expression. Each movement carries spiritual significance, and the dancer is both an artist and a spiritual aspirant. The philosophy is rooted in Shiva Tandava (the cosmic dance of destruction and recreation), representing the eternal cycle of the universe.",
     famousMudras: ["Anjali", "Alapadma", "Kartarimukha", "Pataka"],
     imageUrl: bharatanatyamImg,
+    audioNarration: {
+      english: "/audio/bharatanatyam_english.mp3",
+      hindi: "/audio/bharatanatyam_hindi.mp3",
+    },
   },
   {
     id: "kathak",
@@ -62,6 +70,10 @@ export const dances: Dance[] = [
     philosophy: "Kathak explores the interplay of time (taal) and space through intricate footwork and spins. It embodies the philosophy that rhythm is the heartbeat of the universe, and through mastery of rhythm, one can transcend the mundane.",
     famousMudras: ["Pataka", "Tripataka", "Mayura", "Hamsasya"],
     imageUrl: kathakImg,
+    audioNarration: {
+      english: "/audio/kathak_english.mp3",
+      hindi: "/audio/kathak_hindi.mp3",
+    },
   },
   {
     id: "odissi",
@@ -81,6 +93,10 @@ export const dances: Dance[] = [
     philosophy: "Odissi embodies the Tribhangi — a three-fold bending of the body symbolizing the union of the physical, mental, and spiritual realms. It draws heavily from Jayadeva's Gita Govinda, exploring devotion and divine love.",
     famousMudras: ["Chandrakala", "Ardhachandra", "Mushti", "Katakamukha"],
     imageUrl: odissiImg,
+    audioNarration: {
+      english: "/audio/odissi_english.mp3",
+      hindi: "/audio/odissi_hindi.mp3",
+    },
   },
   {
     id: "kathakali",
@@ -100,5 +116,9 @@ export const dances: Dance[] = [
     philosophy: "Kathakali is built on the Natyashastra's rasa theory, with particular emphasis on the heroic (Vira) and furious (Raudra) sentiments. The elaborate makeup system (Vesham) categorizes characters by their moral nature — green for noble, red for evil, and black for demons.",
     famousMudras: ["Hamsapaksha", "Samdamsha", "Mushti", "Sikhara"],
     imageUrl: kathakaliImg,
+    audioNarration: {
+      english: "/audio/kathakali_english.mp3",
+      hindi: "/audio/kathakali_hindi.mp3",
+    },
   },
 ];

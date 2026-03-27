@@ -28,7 +28,11 @@ DANCES = {
         },
         "templeTraitions": "This dance form has deep connections to Hindu temple traditions, particularly in South India. The sculptures at Chidambaram, Thanjavur, and other temples depict many of the 108 karanas (dance poses) described in the Natyashastra.",
         "philosophy": "Bharatanatyam embodies the concept of Natya Yoga — the path to spiritual liberation through dance. It expresses the Nava Rasas (nine emotions) and connects the dancer to the divine through movement, rhythm, and expression.",
-        "famousMudras": ["Anjali", "Alapadma", "Kartarimukha", "Pataka"]
+        "famousMudras": ["Anjali", "Alapadma", "Kartarimukha", "Pataka"],
+        "audioNarration": {
+            "english": "/audio/bharatanatyam_english.mp3",
+            "hindi": "/audio/bharatanatyam_hindi.mp3"
+        }
     },
     "kathak": {
         "id": "kathak",
@@ -46,7 +50,11 @@ DANCES = {
         },
         "templeTraitions": "Originally performed in temples and later in royal courts, Kathak carries the dual legacy of Hindu devotional traditions and Mughal courtly elegance. The Lucknow and Jaipur gharanas represent these different influences.",
         "philosophy": "Kathak explores the interplay of time (taal) and space through intricate footwork and spins. It embodies the philosophy that rhythm is the heartbeat of the universe, and through mastery of rhythm, one can transcend the mundane.",
-        "famousMudras": ["Pataka", "Tripataka", "Mayura", "Hamsasya"]
+        "famousMudras": ["Pataka", "Tripataka", "Mayura", "Hamsasya"],
+        "audioNarration": {
+            "english": "/audio/kathak_english.mp3",
+            "hindi": "/audio/kathak_hindi.mp3"
+        }
     },
     "odissi": {
         "id": "odissi",
@@ -64,7 +72,11 @@ DANCES = {
         },
         "templeTraitions": "Deeply connected to the Jagannath temple tradition of Puri, Odissi was performed as a sacred offering. The Konark Sun Temple and Mukteshwar Temple feature extensive dance sculptures that form the basis of many Odissi poses.",
         "philosophy": "Odissi embodies the Tribhangi — a three-fold bending of the body symbolizing the union of the physical, mental, and spiritual realms. It draws heavily from Jayadeva's Gita Govinda, exploring devotion and divine love.",
-        "famousMudras": ["Chandrakala", "Ardhachandra", "Mushti", "Katakamukha"]
+        "famousMudras": ["Chandrakala", "Ardhachandra", "Mushti", "Katakamukha"],
+        "audioNarration": {
+            "english": "/audio/odissi_english.mp3",
+            "hindi": "/audio/odissi_hindi.mp3"
+        }
     },
     "kathakali": {
         "id": "kathakali",
@@ -82,7 +94,11 @@ DANCES = {
         },
         "templeTraitions": "While Kathakali is performed both in temples and secular settings, it has strong connections to Kerala's temple festivals. Performances traditionally begin at dusk and continue through the night, creating an immersive ritualistic experience.",
         "philosophy": "Kathakali is built on the Natyashastra's rasa theory, with particular emphasis on the heroic (Vira) and furious (Raudra) sentiments. The elaborate makeup system (Vesham) categorizes characters by their moral nature — green for noble, red for evil, and black for demons.",
-        "famousMudras": ["Hamsapaksha", "Samdamsha", "Mushti", "Sikhara"]
+        "famousMudras": ["Hamsapaksha", "Samdamsha", "Mushti", "Sikhara"],
+        "audioNarration": {
+            "english": "/audio/kathakali_english.mp3",
+            "hindi": "/audio/kathakali_hindi.mp3"
+        }
     }
 }
 

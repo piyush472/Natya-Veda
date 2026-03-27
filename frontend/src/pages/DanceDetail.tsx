@@ -1,14 +1,15 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Network, Play, Pause, Volume2 } from "lucide-react";
+import { ArrowLeft, Network } from "lucide-react";
 import { motion } from "framer-motion";
 import natarajaVisual from "@/assets/download (1).jpg";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { getDanceDetail } from "@/lib/api";
 import bharatanatyamImg from "@/assets/bharatanatyam.jpg";
 import kathakImg from "@/assets/kathak.jpg";
 import odissiImg from "@/assets/odissi.jpg";
 import kathakaliImg from "@/assets/kathakali.jpg";
 import { KnowledgeGraphVisualization } from "@/components/KnowledgeGraphVisualization";
+import { AudioNarrationPlayer } from "@/components/AudioNarrationPlayer";
 import { danceKnowledgeById } from "@/data/danceKnowledge";
 
 interface CompleteHistory {
@@ -31,6 +32,11 @@ interface Dance {
   philosophy?: string;
   famousMudras: string[];
   historySoundUrl?: string;
+  imageUrl?: string;
+  audioNarration?: {
+    english?: string;
+    hindi?: string;
+  };
 }
 
 // Map dance IDs to image assets
@@ -62,8 +68,7 @@ const DanceDetail = () => {
   const [dance, setDance] = useState<Dance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement>(null);
+
 
   useEffect(() => {
     const fetchDance = async () => {
@@ -90,16 +95,7 @@ const DanceDetail = () => {
     fetchDance();
   }, [id]);
 
-  const handleAudioToggle = () => {
-    if (audioRef.current) {
-      if (isAudioPlaying) {
-        audioRef.current.pause();
-      } else {
-        audioRef.current.play();
-      }
-      setIsAudioPlaying(!isAudioPlaying);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -188,36 +184,8 @@ const DanceDetail = () => {
               transition={{ duration: 0.7, delay: 0.1 }}
               className="mb-12 rounded-xl border border-gold-subtle bg-card p-8"
             >
-              <div className="mb-6 flex items-center justify-between">
+              <div className="mb-6">
                 <h2 className="font-display text-3xl font-bold text-foreground">Complete History</h2>
-                {/* Audio Player for History */}
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={handleAudioToggle}
-                    className="flex items-center gap-2 rounded-lg bg-primary/20 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/30"
-                  >
-                    <Volume2 size={18} />
-                    {isAudioPlaying ? (
-                      <>
-                        <Pause size={16} />
-                        <span>Pause</span>
-                      </>
-                    ) : (
-                      <>
-                        <Play size={16} />
-                        <span>Listen to History</span>
-                      </>
-                    )}
-                  </button>
-                  <audio
-                    ref={audioRef}
-                    onEnded={() => setIsAudioPlaying(false)}
-                    className="hidden"
-                  >
-                    <source src={dance.historySoundUrl} type="audio/mpeg" />
-                    Your browser does not support the audio element.
-                  </audio>
-                </div>
               </div>
 
               {/* Vertical Stack Layout */}
@@ -326,6 +294,13 @@ const DanceDetail = () => {
               ))}
             </div>
           </div>
+
+          {/* Audio Narration Player */}
+          <AudioNarrationPlayer
+            englishAudioUrl={dance.audioNarration?.english}
+            hindiAudioUrl={dance.audioNarration?.hindi}
+            danceName={dance?.name || "Dance"}
+          />
 
           {/* Knowledge Graph */}
           {id && danceKnowledgeById[id] && (
