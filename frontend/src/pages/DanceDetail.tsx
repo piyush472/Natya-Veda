@@ -8,6 +8,8 @@ import bharatanatyamImg from "@/assets/bharatanatyam.jpg";
 import kathakImg from "@/assets/kathak.jpg";
 import odissiImg from "@/assets/odissi.jpg";
 import kathakaliImg from "@/assets/kathakali.jpg";
+import { KnowledgeGraphVisualization } from "@/components/KnowledgeGraphVisualization";
+import { danceKnowledgeById } from "@/data/danceKnowledge";
 
 interface CompleteHistory {
   ancientOrigins: string;
@@ -288,6 +290,28 @@ const DanceDetail = () => {
             </motion.div>
           )}
 
+          {/* Temple Traditions Section */}
+          {dance.templeTraitions && (
+            <div className="mt-12 rounded-xl border border-gold-subtle bg-card p-8">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="h-10 w-1 bg-gradient-to-b from-[#f0c96d] to-[#d9a856]" />
+                <h2 className="font-display text-2xl font-bold text-foreground">Temple Traditions</h2>
+              </div>
+              <p className="leading-relaxed text-muted-foreground">{dance.templeTraitions}</p>
+            </div>
+          )}
+
+          {/* Philosophy & Aesthetics Section */}
+          {dance.philosophy && (
+            <div className="mt-8 rounded-xl border border-gold-subtle bg-card p-8">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="h-10 w-1 bg-gradient-to-b from-[#f0c96d] to-[#d9a856]" />
+                <h2 className="font-display text-2xl font-bold text-foreground">Philosophy & Aesthetics</h2>
+              </div>
+              <p className="leading-relaxed text-muted-foreground">{dance.philosophy}</p>
+            </div>
+          )}
+
           {/* Famous Mudras */}
           <div className="mt-8 rounded-xl border border-gold-subtle bg-card p-6">
             <h2 className="font-display text-xl font-semibold text-foreground">Famous Mudras</h2>
@@ -303,17 +327,15 @@ const DanceDetail = () => {
             </div>
           </div>
 
-          {/* Knowledge Graph Placeholder */}
-          <div className="mt-8 rounded-xl border border-dashed border-gold-subtle bg-card p-12 text-center">
-            <Network className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h2 className="mt-4 font-display text-xl font-semibold text-foreground">
-              Interactive Knowledge Graph
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Explore connections between Dance → Mudra → Rasa → Deity
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground/60">Coming soon</p>
-          </div>
+          {/* Knowledge Graph */}
+          {id && danceKnowledgeById[id] && (
+            <div className="mt-12 space-y-4">
+              <KnowledgeGraphVisualization
+                danceKnowledge={danceKnowledgeById[id]}
+                danceName={dance?.name || "Dance"}
+              />
+            </div>
+          )}
         </motion.div>
       </div>
     </div>
