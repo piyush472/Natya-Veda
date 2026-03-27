@@ -1,14 +1,20 @@
 from flask import Blueprint, request, jsonify
-# from .mudra_detection import MudraDetector
-# import cv2
-# import numpy as np
-# from PIL import Image
-# import io
+import cv2
+import numpy as np
+import base64
+from io import BytesIO
+from PIL import Image
 
 api_bp = Blueprint('api', __name__)
 
-# Initialize mudra detector (commented out for now due to dependency issues)
-# detector = MudraDetector()
+# Initialize mudra detector
+try:
+    from mudra_detection import get_detector, init_detector
+    init_detector()
+    detector = get_detector()
+except Exception as e:
+    print(f"Warning: Mudra detector initialization failed - {e}")
+    detector = None
 
 # Complete dance data (moved from frontend)
 DANCES = {
@@ -159,16 +165,61 @@ def get_mudra_info(mudra_name):
     return jsonify(mudra), 200
 
 @api_bp.route('/detect-mudra', methods=['POST'])
-def detect_mudra():
-    """Detect mudra from uploaded image"""
-    # Mudra detection feature coming soon
-    return jsonify({'error': 'Mudra detection API is under development'}), 501
+def detect_mudra_endpoint():
+    """Detect mudra from base64 encoded image"""
+    if detector is None:
+        return jsonify({'error': 'Mudra detector not initialized'}), 503
+    
+    try:
+        data = request.get_json()
+        image_data = data.get('image')
+        
+        if not image_data:
+            return jsonify({'error': 'No image provided'}), 400
+        
+        # Decode base64 image
+        image_bytes = base64.b64decode(image_data.split(',')[1])
+        image = Image.open(BytesIO(image_bytes))
+        frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        
+        # Process frame
+        processed_frame, detected_mudra, confidence = detector.process_frame(frame)
+        
+        # Get mudra info if detected
+        mudra_info = None
+        if detected_mudra:
+            mudra_data = detector.get_mudra_info(detected_mudra)
+            if mudra_data:
+                mudra_info = {
+                    'name': detected_mudra,
+                    'confidence': confidence,
+                    'image_path': mudra_data['image_path']
+                }
+        
+        return jsonify({
+            'detected_mudra': detected_mudra,
+            'confidence': confidence,
+            'mudra_info': mudra_info
+        }), 200
+    
+    except Exception as e:
+        print(f"Mudra detection error: {e}")
+        return jsonify({'error': str(e)}), 500
 
-@api_bp.route('/detect-mudra-stream', methods=['POST'])
-def detect_mudra_stream():
-    """Detect mudra from webcam stream"""
-    # Will implement real-time detection later with WebSockets
-    pass
+@api_bp.route('/mudra-database', methods=['GET'])
+def get_mudra_database():
+    """Get list of available mudras"""
+    if detector is None:
+        return jsonify({'error': 'Mudra detector not initialized'}), 503
+    
+    mudra_list = []
+    for mudra_name in detector.mudra_database.keys():
+        mudra_list.append({
+            'name': mudra_name,
+            'image_path': detector.mudra_database[mudra_name]['image_path']
+        })
+    
+    return jsonify({'mudras': mudra_list}), 200
 
 # ========== HEALTH CHECK ==========
 
