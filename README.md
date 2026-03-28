@@ -68,6 +68,29 @@ To preserve and promote Indian classical dance traditions through accessible dig
 - Real-time inference with <100ms latency
 - Smoothing window for prediction stability
 
+### ✅ **6. Interactive Mudra Practice Mode (NEW! 🎮)**
+- **Gamified Learning Experience** with real-time AI feedback
+- **Three Difficulty Levels**:
+  - **Easy Mode**: 60% confidence threshold, image + mudra name visible, 1 consecutive hold required
+  - **Medium Mode**: 75% confidence threshold, image + mudra name visible, 2 consecutive holds required
+  - **Hard Mode**: 88% confidence threshold, mudra name only (image hidden with reveal button), 3 consecutive holds required
+- **Progressive Difficulty System**:
+  - Higher confidence thresholds prevent near-misses
+  - Consecutive hold requirement ensures gesture precision
+  - Difficulty-based UI ensures strategic progression
+- **Real-Time Feedback System**:
+  - Live confidence scores during detection
+  - Progress tracking showing consecutive matches (e.g., "2/3 holds needed")
+  - Instant success feedback with animations
+- **Scoring & Streak System**:
+  - Track successful recognitions
+  - Build consecutive correct attempt streaks
+  - Visual counters and celebration animations
+- **Smart Webcam Integration**:
+  - Frame capture and real-time processing
+  - Automatic mudra selection from 12-class system
+  - Clear visual guidance for user positioning
+
 ---
 
 ## 🚀 Planned Features (Roadmap)
@@ -80,14 +103,14 @@ To preserve and promote Indian classical dance traditions through accessible dig
 - [ ] Audio feedback for mudra confirmation
 - [ ] Performance statistics tracking
 
-### 🎬 **Phase 3 - Interactive Learning (Q3 2026)**
+### 🎬 **Phase 3 - Enhanced Feedback & Analytics (Q3 2026)**
 - [ ] Video tutorials for each mudra
-- [ ] Step-by-step guided practice mode
+- [ ] Performance statistics and accuracy tracking
 - [ ] Rasa (emotion) classification from gestures
 - [ ] Tala (rhythm) pattern recognition
-- [ ] Dance choreography builder
-- [ ] Performance recording and analysis
+- [ ] Advanced feedback with improvement suggestions
 - [ ] Expert feedback system
+- [ ] Personalized learning paths
 
 ### 📊 **Phase 4 - Gamification & Analytics (Q4 2026)**
 - [ ] User progress tracking and dashboards
@@ -183,6 +206,7 @@ pi-nt-veda/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── MudraDetectionWebcam.tsx  # Real-time detection UI
+│   │   │   ├── MudraPracticeMode.tsx     # Interactive practice gamification
 │   │   │   ├── DanceCard.tsx            # Dance card component
 │   │   │   ├── Navbar.tsx               # Navigation bar
 │   │   │   ├── Footer.tsx               # Footer
@@ -190,6 +214,7 @@ pi-nt-veda/
 │   │   ├── pages/
 │   │   │   ├── Home.tsx                 # Landing page
 │   │   │   ├── MudraDetection.tsx       # Detection page
+│   │   │   ├── MudraPractice.tsx        # Practice mode page
 │   │   │   ├── Dances.tsx               # Dance gallery
 │   │   │   ├── DanceDetail.tsx          # Dance details
 │   │   │   ├── About.tsx                # About page
@@ -205,7 +230,7 @@ pi-nt-veda/
 │   │   └── index.css                # Global styles
 │   ├── public/
 │   │   ├── audio/                   # Narration audio files
-│   │   └── test/
+│   │   └── ...
 │   ├── package.json
 │   ├── vite.config.ts
 │   └── tsconfig.json
@@ -305,6 +330,40 @@ Open your browser and navigate to: **`http://localhost:8081`**
    - Detected mudra name with confidence score (0-100%)
    - Reference image showing correct mudra
    - Real-time status updates
+
+### **Using Interactive Practice Mode**
+
+1. **Navigate to Practice Mode** from the navigation menu
+2. **Select Difficulty Level**:
+   - **Easy** - Forgiving detection, visual guidance, perfect for beginners
+   - **Medium** - Balanced challenge, standard detection accuracy
+   - **Hard** - Expert level, strict detection, hidden reference image
+3. **Grant Webcam Permissions** when requested by browser
+4. **Click "Start Game"** to begin with selected difficulty
+5. **Perform the Displayed Mudra**:
+   - A mudra name appears (with image visible in Easy/Medium modes)
+   - In Hard mode, only the name is shown; click "👁️ Show" button to reveal reference image
+   - Hold your hand steady to match the mudra
+6. **Watch Real-Time Feedback**:
+   - Confidence percentage updates as you move
+   - Progress counter shows consecutive holds (e.g., "2/3" in Medium mode)
+   - Color-coded feedback: Red (too low), Yellow (improving), Green (correct!)
+7. **Achieve Success**:
+   - Complete the required consecutive holds for your difficulty level
+   - Watch the celebration animation
+   - Earn points and build your streak
+8. **Track Progress**:
+   - Check your success count in the stats section
+   - View current streak to maintain momentum
+9. **Try Different Mudras**:
+   - System randomly selects next mudra after success
+   - Difficulty resets if incorrect mudra showed
+
+**Pro Tips**:
+- Start with Easy mode to build confidence
+- Use Show/Hide button strategically in Hard mode
+- Good lighting and hand visibility are crucial
+- Hold gestures steady for best detection
 
 ### **Supported Mudras**
 
