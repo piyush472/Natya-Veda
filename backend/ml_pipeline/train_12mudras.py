@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Train 12-mudra model from dataset."""
+"""Train 12-mudra model from dataset with improved feature extraction."""
 import sys
 from pathlib import Path
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 import joblib
 
 # Import preprocessing function
@@ -50,29 +50,47 @@ def main():
         X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
     )
     
-    model = RandomForestClassifier(
-        n_estimators=300,
-        max_depth=None,
-        min_samples_split=2,
-        min_samples_leaf=1,
-        class_weight="balanced",
-        random_state=42,
-        n_jobs=-1,
-    )
-    model.fit(X_train, y_train)
+    # Normalize features (important for gradient boosting)
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
     
-    y_pred = model.predict(X_test)
+    # Use Gradient Boosting for better handling of similar classes
+    model = GradientBoostingClassifier(
+        n_estimators=500,
+        max_depth=6,
+        learning_rate=0.1,
+        subsample=0.8,
+        min_samples_split=5,
+        min_samples_leaf=2,
+        random_state=42,
+        verbose=0
+    )
+    model.fit(X_train_scaled, y_train)
+    
+y_pred = model.predict(X_test_scaled)
     accuracy = accuracy_score(y_test, y_pred)
     
-    print(f"  ✅ Test Accuracy: {accuracy:.4f}")
+    print(f"  ✅ Test Accuracy: {accuracy:.2%}")
     print(f"\n  Classification Report:")
     print(classification_report(y_test, y_pred, target_names=label_encoder.classes_))
+    
+    # Show confusion to identify which mudras are confused
+    print(f"\n  Analyzing confusions...")
+    conf = confusion_matrix(y_test, y_pred)
+    for i, name in enumerate(label_encoder.classes_):
+        correct = conf[i, i]
+        total = conf[i].sum()
+        acc = correct / total if total > 0 else 0
+        if acc < 0.85:
+            print(f"    ⚠️  {name}: {acc:.1%} ({correct}/{total})")
     
     # Save
     print(f"\n[3/3] Saving model...")
     model_path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "model": model,
+        "scaler": scaler,  # Important: save scaler for inference
         "label_encoder": label_encoder,
         "class_names": label_encoder.classes_.tolist(),
         "feature_dim": int(X.shape[1]),

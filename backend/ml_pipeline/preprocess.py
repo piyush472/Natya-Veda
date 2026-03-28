@@ -36,8 +36,56 @@ def normalize_landmarks(landmarks_xy: np.ndarray) -> np.ndarray:
     return centered / scale
 
 
+def get_finger_bend_angles(landmarks_xy: np.ndarray) -> np.ndarray:
+    """Calculate bend angles for each finger (MCP-PIP-TIP angle).
+    Each finger has 4 points: base, MCP, PIP, TIP. We calculate the angle at PIP joint.
+    """
+    bend_angles = []
+    finger_ranges = [
+        (0, 1, 2, 3),   # Thumb
+        (0, 5, 6, 7),   # Index
+        (0, 9, 10, 11), # Middle
+        (0, 13, 14, 15),# Ring
+        (0, 17, 18, 19) # Pinky
+    ]
+    
+    for wrist_idx, base_idx, pip_idx, tip_idx in finger_ranges:
+        wrist = landmarks_xy[wrist_idx]
+        pip = landmarks_xy[pip_idx]
+        tip = landmarks_xy[tip_idx]
+        
+        # Vector from PIP to base and PIP to tip
+        v1 = landmarks_xy[base_idx] - pip
+        v2 = tip - pip
+        
+        # Calculate angle
+        cos_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
+        cos_angle = np.clip(cos_angle, -1, 1)
+        angle = np.arccos(cos_angle)
+        bend_angles.append(angle)
+    
+    return np.array(bend_angles, dtype=np.float32)
+
+
+def get_finger_spread(landmarks_xy: np.ndarray) -> float:
+    """Calculate how spread out fingers are (distance variance between adjacent finger tips)."""
+    finger_tips = [4, 8, 12, 16, 20]  # Thumb, Index, Middle, Ring, Pinky
+    distances = []
+    
+    for i in range(len(finger_tips) - 1):
+        tip1 = landmarks_xy[finger_tips[i]]
+        tip2 = landmarks_xy[finger_tips[i + 1]]
+        dist = np.linalg.norm(tip2 - tip1)
+        distances.append(dist)
+    
+    # Return variance of distances (high variance = fingers spread differently)
+    return np.var(distances) if distances else 0.0
+
+
 def extract_feature_vector(image_bgr: np.ndarray, hands, normalize: bool = True) -> np.ndarray | None:
-    """Extract a flattened 42-dim feature vector from the first detected hand."""
+    """Extract enhanced feature vector capturing finger bends and hand shape.
+    Dimensions: 42 (base landmarks) + 5 (bend angles) + 1 (spread) = 48 features
+    """
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     results = hands.process(image_rgb)
 
@@ -50,7 +98,19 @@ def extract_feature_vector(image_bgr: np.ndarray, hands, normalize: bool = True)
     if normalize:
         landmarks_xy = normalize_landmarks(landmarks_xy)
 
-    return landmarks_xy.flatten()
+    # Get base features (normalized landmarks)
+    base_features = landmarks_xy.flatten()
+    
+    # Get finger bend angles (key for distinguishing bent vs straight mudras)
+    bend_angles = get_finger_bend_angles(landmarks_xy)
+    
+    # Get finger spread metric
+    finger_spread = np.array([get_finger_spread(landmarks_xy)], dtype=np.float32)
+    
+    # Combine all features
+    combined_features = np.concatenate([base_features, bend_angles, finger_spread])
+    
+    return combined_features
 
 
 def build_dataset(dataset_dir: Path, normalize: bool = True):

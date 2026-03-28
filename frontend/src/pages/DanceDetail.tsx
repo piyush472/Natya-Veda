@@ -200,10 +200,10 @@ const DanceDetail = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
                   >
-                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
-                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Ancient Origins</h3>
-                      <p className="text-xs text-[#f0c96d] font-medium mb-3">2,000 BCE - Present</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.ancientOrigins}</p>
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#b8860b] hover:shadow-lg hover:shadow-[#b8860b]/20">
+                      <h3 className="font-display text-lg font-semibold bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent mb-2">Ancient Origins</h3>
+                      <p className="text-xs font-medium mb-3 bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent">2,000 BCE - Present</p>
+                      <p className="text-sm text-black leading-relaxed">{dance.completeHistory.ancientOrigins}</p>
                     </div>
                   </motion.div>
 
@@ -213,10 +213,10 @@ const DanceDetail = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
                   >
-                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
-                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Temple Heritage</h3>
-                      <p className="text-xs text-[#f0c96d] font-medium mb-3">Sacred Temples</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.templeHeritage}</p>
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#b8860b] hover:shadow-lg hover:shadow-[#b8860b]/20">
+                      <h3 className="font-display text-lg font-semibold bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent mb-2">Temple Heritage</h3>
+                      <p className="text-xs font-medium mb-3 bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent">Sacred Temples</p>
+                      <p className="text-sm text-black leading-relaxed">{dance.completeHistory.templeHeritage}</p>
                     </div>
                   </motion.div>
 
@@ -226,10 +226,10 @@ const DanceDetail = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.4 }}
                   >
-                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
-                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Devadasi Tradition</h3>
-                      <p className="text-xs text-[#f0c96d] font-medium mb-3">1,500 Year Lineage</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.devadasiTradition}</p>
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#b8860b] hover:shadow-lg hover:shadow-[#b8860b]/20">
+                      <h3 className="font-display text-lg font-semibold bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent mb-2">Devadasi Tradition</h3>
+                      <p className="text-xs font-medium mb-3 bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent">1,500 Year Lineage</p>
+                      <p className="text-sm text-black leading-relaxed">{dance.completeHistory.devadasiTradition}</p>
                     </div>
                   </motion.div>
 
@@ -239,10 +239,10 @@ const DanceDetail = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 }}
                   >
-                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
-                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Modern Revival</h3>
-                      <p className="text-xs text-[#f0c96d] font-medium mb-3">1930s - 1940s</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.modernRevival}</p>
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#b8860b] hover:shadow-lg hover:shadow-[#b8860b]/20">
+                      <h3 className="font-display text-lg font-semibold bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent mb-2">Modern Revival</h3>
+                      <p className="text-xs font-medium mb-3 bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent">1930s - 1940s</p>
+                      <p className="text-sm text-black leading-relaxed">{dance.completeHistory.modernRevival}</p>
                     </div>
                   </motion.div>
 
@@ -252,10 +252,10 @@ const DanceDetail = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.6 }}
                   >
-                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#f0c96d] hover:shadow-lg hover:shadow-[#f0c96d]/20">
-                      <h3 className="font-display text-lg font-semibold text-[#f0c96d] mb-2">Contemporary Era</h3>
-                      <p className="text-xs text-[#f0c96d] font-medium mb-3">Present Day</p>
-                      <p className="text-sm text-muted-foreground leading-relaxed">{dance.completeHistory.contemporaryEra}</p>
+                    <div className="rounded-lg border border-gold-subtle bg-card p-6 transition-all hover:border-[#b8860b] hover:shadow-lg hover:shadow-[#b8860b]/20">
+                      <h3 className="font-display text-lg font-semibold bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent mb-2">Contemporary Era</h3>
+                      <p className="text-xs font-medium mb-3 bg-gradient-to-r from-[#c4a052] to-[#8b6914] bg-clip-text text-transparent">Present Day</p>
+                      <p className="text-sm text-black leading-relaxed">{dance.completeHistory.contemporaryEra}</p>
                     </div>
                   </motion.div>
                 </div>
@@ -266,10 +266,10 @@ const DanceDetail = () => {
           {dance.templeTraitions && (
             <div className="mt-12 rounded-xl border border-gold-subtle bg-card p-8">
               <div className="mb-6 flex items-center gap-3">
-                <div className="h-10 w-1 bg-gradient-to-b from-[#f0c96d] to-[#d9a856]" />
+                <div className="h-10 w-1 bg-gradient-to-b from-[#c4a052] to-[#8b6914]" />
                 <h2 className="font-display text-2xl font-bold text-foreground">Temple Traditions</h2>
               </div>
-              <p className="leading-relaxed text-muted-foreground">{dance.templeTraitions}</p>
+              <p className="leading-relaxed text-black">{dance.templeTraitions}</p>
             </div>
           )}
 
@@ -277,10 +277,10 @@ const DanceDetail = () => {
           {dance.philosophy && (
             <div className="mt-8 rounded-xl border border-gold-subtle bg-card p-8">
               <div className="mb-6 flex items-center gap-3">
-                <div className="h-10 w-1 bg-gradient-to-b from-[#f0c96d] to-[#d9a856]" />
+                <div className="h-10 w-1 bg-gradient-to-b from-[#c4a052] to-[#8b6914]" />
                 <h2 className="font-display text-2xl font-bold text-foreground">Philosophy & Aesthetics</h2>
               </div>
-              <p className="leading-relaxed text-muted-foreground">{dance.philosophy}</p>
+              <p className="leading-relaxed text-black">{dance.philosophy}</p>
             </div>
           )}
 

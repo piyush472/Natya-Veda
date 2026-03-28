@@ -17,15 +17,17 @@ prediction_history = deque(maxlen=SMOOTH_WINDOW)
 
 model_payload = None
 model = None
+scaler = None
 label_encoder = None
-feature_dim = 42
+feature_dim = 48
 hands_detector = None
 
 try:
     model_payload = joblib.load(MODEL_PATH)
     model = model_payload['model']
+    scaler = model_payload.get('scaler', None)  # Load scaler if available
     label_encoder = model_payload['label_encoder']
-    feature_dim = int(model_payload.get('feature_dim', 42))
+    feature_dim = int(model_payload.get('feature_dim', 48))
 
     mp_hands = mp.solutions.hands
     hands_detector = mp_hands.Hands(
@@ -35,7 +37,7 @@ try:
         min_detection_confidence=0.6,
         min_tracking_confidence=0.6,
     )
-    print(f"✅ ML mudra model loaded from: {MODEL_PATH}")
+    print(f"✅ ML mudra model loaded: {feature_dim} features")
 except Exception as e:
     print(f"⚠️ ML mudra model initialization failed: {e}")
 
@@ -50,8 +52,49 @@ def normalize_landmarks(landmarks_xy):
     return centered / scale
 
 
+def get_finger_bend_angles(landmarks_xy):
+    """Calculate bend angles for each finger."""
+    bend_angles = []
+    finger_ranges = [
+        (0, 1, 2, 3),   # Thumb
+        (0, 5, 6, 7),   # Index
+        (0, 9, 10, 11), # Middle
+        (0, 13, 14, 15),# Ring
+        (0, 17, 18, 19) # Pinky
+    ]
+    
+    for wrist_idx, base_idx, pip_idx, tip_idx in finger_ranges:
+        wrist = landmarks_xy[wrist_idx]
+        pip = landmarks_xy[pip_idx]
+        tip = landmarks_xy[tip_idx]
+        
+        v1 = landmarks_xy[base_idx] - pip
+        v2 = tip - pip
+        
+        cos_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
+        cos_angle = np.clip(cos_angle, -1, 1)
+        angle = np.arccos(cos_angle)
+        bend_angles.append(angle)
+    
+    return np.array(bend_angles, dtype=np.float32)
+
+
+def get_finger_spread(landmarks_xy):
+    """Calculate finger spread variance."""
+    finger_tips = [4, 8, 12, 16, 20]
+    distances = []
+    
+    for i in range(len(finger_tips) - 1):
+        tip1 = landmarks_xy[finger_tips[i]]
+        tip2 = landmarks_xy[finger_tips[i + 1]]
+        dist = np.linalg.norm(tip2 - tip1)
+        distances.append(dist)
+    
+    return np.var(distances) if distances else 0.0
+
+
 def extract_feature_vector(frame_bgr):
-    """Extract flattened 42-d landmark vector from first detected hand."""
+    """Extract enhanced feature vector with bend angles and finger spread."""
     if hands_detector is None:
         return None
 
@@ -64,7 +107,20 @@ def extract_feature_vector(frame_bgr):
     hand_landmarks = results.multi_hand_landmarks[0]
     landmarks_xy = np.array([(lm.x, lm.y) for lm in hand_landmarks.landmark], dtype=np.float32)
     landmarks_xy = normalize_landmarks(landmarks_xy)
-    return landmarks_xy.flatten()
+    
+    # Get base features (42 dimensions)
+    base_features = landmarks_xy.flatten()
+    
+    # Only add bend angles and spread if model expects them (48 dims)
+    if feature_dim == 48:
+        bend_angles = get_finger_bend_angles(landmarks_xy)
+        finger_spread = np.array([get_finger_spread(landmarks_xy)], dtype=np.float32)
+        combined_features = np.concatenate([base_features, bend_angles, finger_spread])
+    else:
+        # Backward compatibility with 42-dim models
+        combined_features = base_features
+    
+    return combined_features
 
 
 def smooth_prediction(label):
@@ -278,7 +334,13 @@ def detect_mudra_endpoint():
                 'message': 'No hand detected. Show your full hand to the camera.'
             }), 200
 
-        probs = model.predict_proba([feature])[0]
+        # Scale features if scaler is available
+        if scaler is not None:
+            feature_scaled = scaler.transform([feature])[0]
+        else:
+            feature_scaled = feature
+
+        probs = model.predict_proba([feature_scaled])[0]
         pred_idx = int(np.argmax(probs))
         raw_label = label_encoder.inverse_transform([pred_idx])[0]
         confidence = float(probs[pred_idx])
