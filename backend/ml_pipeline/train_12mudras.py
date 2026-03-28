@@ -55,18 +55,30 @@ def main():
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
     
+    # Calculate class weights to handle imbalance (e.g., if Sarpashirsha has more samples)
+    from sklearn.utils.class_weight import compute_class_weight
+    class_weights = compute_class_weight('balanced', classes=np.unique(y_train), y=y_train)
+    sample_weights = class_weights[y_train]
+    
+    print(f"  📊 Class weights (for balancing imbalance):")
+    for name, weight in zip(label_encoder.classes_, class_weights):
+        print(f"     {name}: {weight:.2f}")
+    
     # Use Gradient Boosting for better handling of similar classes
+    # Tuned for better discrimination of similar mudras like Pataka
     model = GradientBoostingClassifier(
-        n_estimators=500,
-        max_depth=6,
-        learning_rate=0.1,
-        subsample=0.8,
-        min_samples_split=5,
-        min_samples_leaf=2,
+        n_estimators=1000,  # More trees for better accuracy
+        max_depth=9,  # Deeper trees to capture mudra nuances
+        learning_rate=0.05,  # Lower learning rate for finer discrimination
+        subsample=0.7,  # Better generalization
+        min_samples_split=3,  # Lower to capture mudra differences
+        min_samples_leaf=1,
+        max_features='sqrt',  # Better feature selection
+        init='zero',  # Better for weighted samples
         random_state=42,
         verbose=0
     )
-    model.fit(X_train_scaled, y_train)
+    model.fit(X_train_scaled, y_train, sample_weight=sample_weights)
     
     y_pred = model.predict(X_test_scaled)
     accuracy = accuracy_score(y_test, y_pred)

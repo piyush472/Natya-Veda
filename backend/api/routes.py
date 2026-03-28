@@ -12,8 +12,9 @@ from PIL import Image
 api_bp = Blueprint('api', __name__)
 
 MODEL_PATH = Path(__file__).resolve().parent.parent / 'ml_pipeline' / 'artifacts' / 'model.pkl'
-SMOOTH_WINDOW = 5
+SMOOTH_WINDOW = 12  # Increased from 8 for more stable detection
 prediction_history = deque(maxlen=SMOOTH_WINDOW)
+CONFIDENCE_THRESHOLD = 0.90  # Increased from 0.80 - reject uncertain predictions
 
 model_payload = None
 model = None
@@ -133,6 +134,60 @@ def smooth_prediction(label):
     if votes >= (prediction_history.maxlen // 2 + 1):
         return winner
     return None
+
+
+def validate_pataka_features(landmarks_xy):
+    """Validate if landmarks match Pataka characteristics (flat hand, extended fingers).
+    Pataka should have low finger bend angles and low spread variance.
+    """
+    finger_ranges = [
+        (0, 1, 2, 3),   # Thumb
+        (0, 5, 6, 7),   # Index
+        (0, 9, 10, 11), # Middle
+        (0, 13, 14, 15),# Ring
+        (0, 17, 18, 19) # Pinky
+    ]
+    
+    bend_sum = 0.0
+    for wrist_idx, base_idx, pip_idx, tip_idx in finger_ranges:
+        pip = landmarks_xy[pip_idx]
+        v1 = landmarks_xy[base_idx] - pip
+        v2 = landmarks_xy[tip_idx] - pip
+        cos_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-6)
+        cos_angle = np.clip(cos_angle, -1, 1)
+        bend_sum += np.arccos(cos_angle)
+    
+    # Pataka: very straight fingers, average bend should be high (near 180 degrees = π radians)
+    # If fingers are bent, bend angle will be low
+    avg_bend = bend_sum / 5.0
+    return avg_bend > 2.0  # Threshold for straight fingers (>115 degrees average)
+
+
+def check_prediction_confidence(probs, pred_idx, label):
+    """Enhanced validation: check if top-2 predictions are too close (model uncertain).
+    Also apply per-mudra confidence thresholds.
+    """
+    top_confidence = probs[pred_idx]
+    
+    # Get second highest confidence
+    top2_idx = np.argsort(probs)[-2]
+    second_confidence = probs[top2_idx] if top2_idx != pred_idx else 0
+    
+    confidence_gap = top_confidence - second_confidence
+    
+    # If gap is too small, model is uncertain - reject it
+    if confidence_gap < 0.15:  # Must have 15% gap from 2nd place
+        return False, top_confidence
+    
+    # Per-mudra stricter thresholds for commonly confused ones
+    if label in ['Sarpashirsha', 'Mrigashirsha', 'Pataka']:
+        min_threshold = 0.92  # Very strict for these
+    elif label in ['Ardhapataka', 'Chandrakala']:
+        min_threshold = 0.88
+    else:
+        min_threshold = 0.85
+    
+    return top_confidence >= min_threshold, top_confidence
 
 # Complete dance data (moved from frontend)
 DANCES = {
@@ -334,6 +389,15 @@ def detect_mudra_endpoint():
                 'message': 'No hand detected. Show your full hand to the camera.'
             }), 200
 
+        # Get landmarks for validation
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = hands_detector.process(frame_rgb)
+        landmarks_xy = None
+        if results.multi_hand_landmarks:
+            hand_landmarks = results.multi_hand_landmarks[0]
+            landmarks_xy = np.array([(lm.x, lm.y) for lm in hand_landmarks.landmark], dtype=np.float32)
+            landmarks_xy = normalize_landmarks(landmarks_xy)
+
         # Scale features if scaler is available
         if scaler is not None:
             feature_scaled = scaler.transform([feature])[0]
@@ -343,10 +407,56 @@ def detect_mudra_endpoint():
         probs = model.predict_proba([feature_scaled])[0]
         pred_idx = int(np.argmax(probs))
         raw_label = label_encoder.inverse_transform([pred_idx])[0]
-        confidence = float(probs[pred_idx])
+        
+        # NEW: Enhanced confidence validation
+        is_valid, confidence = check_prediction_confidence(probs, pred_idx, raw_label)
+        
+        if not is_valid:
+            prediction_history.clear()
+            return jsonify({
+                'detected_mudra': None,
+                'confidence': 0.0,
+                'mudra_info': None,
+                'finger_state': None,
+                'status': 'uncertain',
+                'source': 'mediapipe',
+                'message': f'Uncertain detection. Model confidence too low. Please adjust your hand position.'
+            }), 200
+        
+        confidence = float(confidence)
+        
+        # Apply Pataka-specific validation to improve detection accuracy
+        if raw_label == 'Pataka' and landmarks_xy is not None:
+            if not validate_pataka_features(landmarks_xy):
+                # Penalize confidence if Pataka features don't match
+                confidence *= 0.6
+        
         stable_label = smooth_prediction(raw_label)
+        
+        # NEW: Fast-path for high confidence - return immediately if confident AND consistent
+        quick_confidence = 0.92
+        if confidence >= quick_confidence:
+            # Check if this matches recent history (last 3 predictions)
+            recent_predictions = list(prediction_history)[-3:] if len(prediction_history) > 0 else []
+            if recent_predictions and all(p == raw_label for p in recent_predictions):
+                # Very confident and consistent - return now without waiting
+                mudra_meta = ML_MUDRAS.get(raw_label, {'image_file': ''})
+                return jsonify({
+                    'detected_mudra': raw_label,
+                    'confidence': confidence,
+                    'mudra_info': {
+                        'name': raw_label,
+                        'confidence': confidence,
+                        'image_file': mudra_meta.get('image_file', ''),
+                        'description': 'ML classification from MediaPipe hand landmarks'
+                    },
+                    'finger_state': None,
+                    'source': 'mediapipe',
+                    'status': 'detected',
+                    'message': f'{raw_label} detected',
+                }), 200
 
-        if stable_label and confidence >= 0.65:
+        if stable_label and confidence >= CONFIDENCE_THRESHOLD:
             mudra_meta = ML_MUDRAS.get(stable_label, {'image_file': ''})
             return jsonify({
                 'detected_mudra': stable_label,

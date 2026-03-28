@@ -46,13 +46,15 @@ def smooth_prediction(history: deque[str], window_size: int):
     return None
 
 
-def run_realtime(model_payload: dict, smooth_window: int = 5):
+def run_realtime(model_payload: dict, smooth_window: int = 10):
     """Run webcam inference loop and display predicted mudra with smoothing."""
     model = model_payload["model"]
     label_encoder = model_payload["label_encoder"]
+    scaler = model_payload.get("scaler", None)  # Load scaler - CRITICAL for correct predictions
     feature_dim = model_payload.get("feature_dim", 42)
 
     history = deque(maxlen=smooth_window)
+    confidence_threshold = 0.88  # Higher threshold to avoid false positives
 
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
@@ -80,14 +82,22 @@ def run_realtime(model_payload: dict, smooth_window: int = 5):
             display_conf = 0.0
 
             if feature is not None and feature.shape[0] == feature_dim:
-                probs = model.predict_proba([feature])[0]
+                # CRITICAL: Scale features using the same scaler used during training
+                feature_scaled = scaler.transform([feature])[0] if scaler else feature
+                probs = model.predict_proba([feature_scaled])[0]
                 pred_idx = int(np.argmax(probs))
                 label = label_encoder.inverse_transform([pred_idx])[0]
                 confidence = float(probs[pred_idx])
 
-                history.append(label)
-                stable_label = smooth_prediction(history, smooth_window)
-                display_label = stable_label if stable_label else f"Trying: {label}"
+                # Only add to history if confidence is high enough to avoid noise
+                if confidence >= confidence_threshold:
+                    history.append(label)
+                    stable_label = smooth_prediction(history, smooth_window)
+                    display_label = stable_label if stable_label else f"Trying: {label}"
+                else:
+                    history.clear()
+                    display_label = f"Low confidence ({confidence:.2f})"
+                
                 display_conf = confidence
 
                 mp_drawing.draw_landmarks(
