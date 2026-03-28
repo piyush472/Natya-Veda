@@ -157,22 +157,26 @@ const DanceDetail = () => {
           Back to Dances
         </Link>
 
+        {/* Small Image Between Back Link and Content */}
+        <div className="mb-8 flex justify-start">
+          <div className="dance-card-media w-56 h-56 overflow-hidden rounded-xl">
+            <img src={imageUrl} alt={dance.name} className="h-full w-full object-cover" />
+          </div>
+        </div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          {/* Hero */}
-          <div className="mb-12 grid gap-8 lg:grid-cols-2">
-            <div className="dance-card-media aspect-[4/3] overflow-hidden rounded-xl">
-              <img src={imageUrl} alt={dance.name} className="h-full w-full object-cover" />
-            </div>
-            <div className="flex flex-col justify-center">
+          {/* Hero - Background Cover */}
+          <div className="relative flex flex-col justify-center mb-12">
+            <div className="max-w-2xl">
               <p className="text-sm font-medium text-[#f0c96d]">{dance.origin}</p>
               <h1 className="mt-2 font-display text-4xl font-bold text-[#eadcb2] sm:text-5xl">
                 {dance.name}
               </h1>
-              <p className="mt-4 leading-relaxed text-[#d9ccac]">{dance.description}</p>
+              <p className="mt-4 leading-relaxed text-[#d9ccac] max-w-lg">{dance.description}</p>
             </div>
           </div>
 
