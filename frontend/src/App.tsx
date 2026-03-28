@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Dances from "./pages/Dances";
 import DanceDetail from "./pages/DanceDetail";
 import MudraDetection from "./pages/MudraDetection";
+import MudraPractice from "./pages/MudraPractice";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
@@ -18,6 +19,7 @@ const App = () => (
           <Route path="/dances" element={<Dances />} />
           <Route path="/dances/:id" element={<DanceDetail />} />
           <Route path="/mudra-detection" element={<MudraDetection />} />
+          <Route path="/mudra-practice" element={<MudraPractice />} />
           <Route path="/about" element={<About />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -68,7 +68,7 @@ def main():
     )
     model.fit(X_train_scaled, y_train)
     
-y_pred = model.predict(X_test_scaled)
+    y_pred = model.predict(X_test_scaled)
     accuracy = accuracy_score(y_test, y_pred)
     
     print(f"  ✅ Test Accuracy: {accuracy:.2%}")

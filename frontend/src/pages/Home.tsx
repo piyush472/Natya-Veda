@@ -1,6 +1,6 @@
 import Hero from "@/components/Hero";
 import FeatureCard from "@/components/FeatureCard";
-import { Network, History, Hand, PlayCircle } from "lucide-react";
+import { Network, History, Hand, PlayCircle, Zap } from "lucide-react";
 
 const features = [
   {
@@ -19,9 +19,9 @@ const features = [
     description: "Use AI-powered hand gesture recognition to identify classical dance mudras.",
   },
   {
-    icon: PlayCircle,
-    title: "Multimedia Learning",
-    description: "Learn through videos, images, and interactive content curated by experts.",
+    icon: Zap,
+    title: "Interactive Practice Mode",
+    description: "Learn mudras through gamified practice with real-time AI feedback and scoring.",
   },
 ];
 

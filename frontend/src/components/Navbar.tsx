@@ -6,6 +6,7 @@ const navLinks = [
   { to: "/", label: "Home" },
   { to: "/dances", label: "Dances" },
   { to: "/mudra-detection", label: "Mudra Detection" },
+  { to: "/mudra-practice", label: "Practice Mode" },
   { to: "/about", label: "About" },
 ];
 
